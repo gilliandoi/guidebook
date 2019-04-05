@@ -5,6 +5,8 @@
 ```
 netstat -aon | find "3000"
 taskkill /pid  16900
+強制終了：
+taskkill /pid  16900 /F
 ```
 
 ## プロジェクト管理知識/フォマード
