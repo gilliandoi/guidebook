@@ -13,4 +13,7 @@ taskkill /pid  16900 /F
 ```
 https://thinkit.co.jp/project/index.html
 https://thinkit.co.jp/free/project/1/4/1.html
+
+Ruby案件提案書：
+https://www.transnet.ne.jp/techdoc/
 ```
