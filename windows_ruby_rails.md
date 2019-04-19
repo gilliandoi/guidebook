@@ -7,10 +7,13 @@ https://qiita.com/3no3_tw/items/8c0bcf258370d91bf6e0
 ```
 
 ## railsインストール
+```
 printf "install: --no-rdoc --no-ri\nupdate: --no-rdoc --no-ri\n" >> ~/.gemrc
 gem install rails -v 5.1.6
+```
 
 ## 手順
+```
 参照サイト参照して構築
 rails new sample_app
 cd sample_app/
@@ -18,6 +21,7 @@ bundle install
 ※bundle install --without production
 bundle update
 rails s
+```
 
 ## FAQ
 ```
