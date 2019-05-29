@@ -45,7 +45,7 @@ vagrant -v
 ```
 
 # Ruby環境構築：
-https://github.com/ouin-tci/centos6.5/blob/master/awslinux.md
+https://github.com/gilliandoi/guidebook/blob/master/awslinux.md
 
 # FAQ：
 ```
