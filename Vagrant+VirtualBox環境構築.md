@@ -4,8 +4,6 @@
 ```
 Vagrant：  
 https://www.vagrantup.com/downloads.html  
-vagrant-vbguest：  
-vagrant plugin install vagrant-vbguest  
 VirtualBox：
 https://www.virtualbox.org/wiki/Downloads
 CentOS Boxファイル：
@@ -23,6 +21,9 @@ vagrant -v
 　https://app.vagrantup.com/boxes/search
 　新規作成用のコマンド：
 　vagrant init mvbcoding/awslinux
+  vagrant-vbguest：  
+  vagrant plugin install vagrant-vbguest
+  vagrant vbguest
 　vagrant up
 
 ②フォルダー作成
