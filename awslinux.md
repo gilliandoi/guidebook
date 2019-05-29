@@ -77,7 +77,7 @@ git --version
 
 #if git hasnt installed yet
 sudo yum install -y git
-
+cd /home
 git clone https://github.com/sstephenson/rbenv.git ~/.rbenv
 
 git clone git://github.com/sstephenson/ruby-build.git ~/.rbenv/plugins/ruby-build
