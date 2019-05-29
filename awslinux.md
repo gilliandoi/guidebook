@@ -98,7 +98,9 @@ gem install bundler
 gem install rails
 sudo yum install -y sqlite-devel
 sudo yum install nodejs npm --enablerepo=epel
-
+node -v
+npm install -g yarn
+yarn -v
 ```
 
 
