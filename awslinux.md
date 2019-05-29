@@ -63,7 +63,7 @@ sudo su - postgres
 psql
 CREATE DATABASE "DBNAME";
 ¥l
-¥d
+¥q
 gzip -cd /path/to/dump.gz | psql -d "DBNAME"
 exit
 
