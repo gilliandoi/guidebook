@@ -3,10 +3,10 @@
 Vagrant.configure("2") do |config|
   config.vm.hostname = "vagrant-local-awslinux-2018"
   config.vm.box = "mvbcoding/awslinux"
-  config.disksize.size = '16GB'
+  #config.disksize.size = '16GB'
 
   config.vm.synced_folder ".", "/vagrant", nfs: true
-  config.vm.synced_folder "C:/work/workspace/hello_app/", "/home/hello_app", nfs: true
+  config.vm.synced_folder "C:/workspace/", "/home/workspace", nfs: true
   
   config.vm.network :private_network, ip: "192.168.33.12"
 
