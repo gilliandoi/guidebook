@@ -99,7 +99,8 @@ gem install rails
 sudo yum install -y sqlite-devel
 sudo yum install nodejs npm --enablerepo=epel
 node -v
-npm install -g yarn
+sudo wget https://dl.yarnpkg.com/rpm/yarn.repo -O /etc/yum.repos.d/yarn.repo
+yum install yarn
 yarn -v
 ```
 
