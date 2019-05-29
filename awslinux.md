@@ -97,7 +97,8 @@ ruby -v
 gem install bundler
 gem install rails
 sudo yum install -y sqlite-devel
-sudo yum install nodejs npm --enablerepo=epel
+curl -sL https://rpm.nodesource.com/setup_11.x | sudo bash -
+sudo yum install -y nodejs
 node -v
 sudo wget https://dl.yarnpkg.com/rpm/yarn.repo -O /etc/yum.repos.d/yarn.repo
 yum install yarn
