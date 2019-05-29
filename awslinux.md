@@ -57,7 +57,7 @@ host    all         all         0.0.0.0/0             trust
 
 sudo service postgresql96 restart
 //change password to 'postgres'
-sudo passwd root
+sudo passwd postgres
 
 sudo su - postgres
 psql
