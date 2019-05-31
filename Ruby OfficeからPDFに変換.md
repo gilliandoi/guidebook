@@ -1,5 +1,5 @@
 # Ruby OfficeからPDFに変換
-'''
+```
 ファイルアップ：
 rails g controller fileuploads index create new change
 https://cre8cre8.com/rails/upload-image.htm
@@ -39,12 +39,12 @@ libreoffice変換範囲：
 .txt (テキストファイル)
 .html (HTMLドキュメント)
 .odt, .ods などの LibreOffice ドキュメント
-'''
+```
 
 ## 参照サイト：
-'''
+```
 https://qiita.com/kijitora-neko/items/ca8e215c4580e59fef80
 https://qiita.com/mosin_nozomi/items/67702903b2be980458b0
 https://hamajyotan.hatenadiary.org/entry/20120404/1333532738
 https://www.sukerou.com/2018/07/libreoffice.html
-'''
+```
