@@ -1,0 +1,103 @@
+PHPローカル環境構築
+環境：Windows10
+
+1.VisualStudio 2017のダウンロードd
+https://docs.microsoft.com/ja-jp/visualstudio/install/install-visual-studio?view=vs-2017
+
+2.Visual C++のダウンロード
+https://support.microsoft.com/ja-jp/help/2977003/the-latest-supported-visual-c-downloads
+
+3.PHPのダウンロード(PHP7.2、Windows、Thread Safe)
+①zipファイルをC:直下に設置してください。
+https://windows.php.net/download#php-7.2
+②下記ファイル設定変更：
+php.ini-developmentファイルを右クリックでコピーして複製し、
+名前をphp.iniに書き換えてください。
+【php.ini】
+1.extension_dir
+　extension_dir = "C:/php-7.2.21/ext"
+　extension_dir = "C:/php-7.2.21/ext"
+2.Dynamic Extensions
+extension=fileinfo
+extension=mbstring
+extension=mysqli
+extension=openssl
+extension=pdo_mysql
+extension=pdo_pgsql
+extension=pdo_sqlite
+extension=sockets
+extension=sqlite3
+3.date.timezone
+date.timezone = Asia/Tokyo
+③環境変数の設定：
+pathで追加：C:\php-7.2.21
+④バージョン確認
+コンソールで「php -v」
+
+4.Apacheのダウンロード（Apache2.4）
+https://www.apachelounge.com/download/
+①ダウンロードしたzipを展開して、「Apache24」フォルダをcの直下に移動
+②httpd.confの設定変更：
+追加：
+LoadModule php7_module "C:/php-7.2.21/php7apache2_4.dll"
+ServerName www.example.com:80
+
+<Directory />
+    AllowOverride All
+    Require all granted
+</Directory>
+
+Options Indexes FollowSymLinks ExecCGI
+Options +Includes
+
+AddType application/x-httpd-php .php
+AddType application/x-httpd-php-source .phps
+AddType application/x-httpd-cgi .cgi
+AddType application/x-httpd-cgi .pl
+
+AddType text/html .shtml
+AddOutputFilter INCLUDES .shtml
+
+PHPIniDir "C:/php-7.2.21"
+
+③Apache起動
+C:\Apache24\bin\httpd.exe
+
+④Apache動作確認
+http://localhost
+
+4.PHP実行
+下記フォルダーの直下でinfo.php作成：
+C:\Apache24\htdocs
+info.php:
+<?php
+phpinfo()
+?>
+アクセスURL：
+http://localhost/info.php
+
+5.composerインストール
+https://getcomposer.org/doc/00-intro.md#installation-windows
+composer -V
+
+6.Laravelのインストール
+下記コマンドで叩く：
+Composer global require "laravel/installer=~1.1"
+環境変数：
+Pathで「C:\Users\ここには各ユーザの名前が入ります\AppData\Roaming\Composer\vendor\bin」新規
+
+7.新規プロジェクト作成：
+cd C:\Apache24\htdocs
+composer create-project --prefer-dist laravel/laravel demo
+※gitからダウンロード
+cd demo
+簡易サーバ起動：
+php artisan serve
+動作確認：
+http://127.0.0.1:8000/login
+
+8.Postgrey11インストール
+https://www.postgresql.org/download/windows/
+pgAdminでdemoのデータベースをを作成
+demoのデータベースでdemoのスキーマを作成
+
