@@ -1,0 +1,128 @@
+CI環境構築手順(Jenkins + SonarQube + Nexus)
+
+▼Dockerのインストール
+yum install -y yum-utils device-mapper-persistent-data lvm2
+yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+yum makecache fast
+yum install docker-ce
+systemctl start docker
+systemctl enable docker
+
+▼Jenkinsイメージのビルド
+下記ファイル作成：
+----------------------------------------------------
+Dockerfile:
+FROM jenkinsci/jenkins:2.89
+
+# install via apt
+USER root
+
+# install jenkins plugins
+COPY plugins.txt /usr/share/jenkins/plugins.txt
+RUN /usr/local/bin/plugins.sh /usr/share/jenkins/plugins.txt
+
+# drop back to the regular jenkins user - good practice
+USER jenkins
+----------------------------------------------------
+plugin.txt:
+cloudbees-folder
+jdk-tool
+script-security
+command-launcher
+structs
+workflow-step-api
+scm-api
+workflow-api
+bouncycastle-api
+junit
+antisamy-markup-formatter
+token-macro
+build-timeout
+credentials
+ssh-credentials
+plain-credentials
+credentials-binding
+timestamper
+workflow-support
+durable-task
+workflow-durable-task-step
+matrix-project
+resource-disposer
+ws-cleanup
+ant
+gradle
+pipeline-milestone-step
+jquery-detached
+jackson2-api
+ace-editor
+workflow-scm-step
+workflow-cps
+pipeline-input-step
+pipeline-stage-step
+workflow-job
+pipeline-graph-analysis
+pipeline-rest-api
+handlebars
+momentjs
+pipeline-stage-view
+pipeline-build-step
+pipeline-model-api
+pipeline-model-extensions
+apache-httpcomponents-client-4-api
+jsch
+git-client
+git-server
+workflow-cps-global-lib
+display-url-api
+mailer
+branch-api
+workflow-multibranch
+authentication-tokens
+docker-commons
+workflow-basic-steps
+docker-workflow
+pipeline-stage-tags-metadata
+pipeline-model-declarative-agent
+pipeline-model-definition
+lockable-resources
+workflow-aggregator
+github-api
+git
+github
+github-branch-source
+pipeline-github-lib
+mapdb-api
+subversion
+ssh-slaves
+matrix-auth
+pam-auth
+ldap
+email-ext
+javadoc
+maven-plugin
+dashboard-view
+script-security
+matrix-project
+token-macro
+checkstyle
+findbugs
+sonar
+----------------------------------------------------
+イメージビルド：
+docker build -t jenkins-master .
+Jenkinsコンテナ起動：
+docker run --name jenkins -p 8080:8080 -p 50000:50000 -v /var/jenkins_home -d jenkins-master
+初期パスワード確認：
+docker exec -i -t jenkins
+cat /var/jenkins_home/secrets/initialAdminPassword
+
+▼Jenkinsアクセス
+http://192.168.1.201:8080
+
+Jenkinsログインアカウント：
+ユーザー名:admin
+パスワード:password!
+
+参照サイト：
+https://qiita.com/ogu1101/items/a04e77f0fca03fec8197
+https://dev.classmethod.jp/tool/jenkins/jenkins-on-docker/
