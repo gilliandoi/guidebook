@@ -41,7 +41,7 @@ cat id_rsa.pub
 
 mkdir jobs
 cd /jobs
-git clone git@redmine.tci-cn.co.jp:toughness_renew/batch-dev.git
+docker-compose-jenkins-nexus.yml参照
 
 コンテナ起動：
 cd /jobs/batch-dev/jenkins
