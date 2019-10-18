@@ -1,5 +1,21 @@
 CI環境構築手順(Jenkins + SonarQube + Nexus)
 
+--------------------------------------------------------------
+
+CI環境構築進捗：
+Jenkins、Nexus、SonarQubeサーバ構築 OK
+
+ジョブ実行：
+build--------------------OK
+Test---------------------OK
+SonarQube Scanner--------OK ←SonarQubeサーバ不安定調査
+Checkstyle---------------OK
+FindBugs-----------------OK
+Nexus--------------------未着手
+※DB構築必要
+
+--------------------------------------------------------------
+
 ▼Dockerのインストール
 yum install -y yum-utils device-mapper-persistent-data lvm2
 yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
@@ -8,121 +24,324 @@ yum install docker-ce
 systemctl start docker
 systemctl enable docker
 
-▼Jenkinsイメージのビルド
-下記ファイル作成：
-----------------------------------------------------
-Dockerfile:
-FROM jenkinsci/jenkins:2.89
+curl -L https://github.com/docker/compose/releases/download/1.22.0/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+docker-compose --version
 
-# install via apt
-USER root
+▼サーバGit SSH登録
+yum install git
+mkdir /root/.ssh
+cd /root/.ssh
+ssh-keygen -t rsa（Enter）
+cat id_rsa.pub
 
-# install jenkins plugins
-COPY plugins.txt /usr/share/jenkins/plugins.txt
-RUN /usr/local/bin/plugins.sh /usr/share/jenkins/plugins.txt
+公開鍵をgitアカウントに登録
 
-# drop back to the regular jenkins user - good practice
-USER jenkins
-----------------------------------------------------
-plugin.txt:
-cloudbees-folder
-jdk-tool
-script-security
-command-launcher
-structs
-workflow-step-api
-scm-api
-workflow-api
-bouncycastle-api
-junit
-antisamy-markup-formatter
-token-macro
-build-timeout
-credentials
-ssh-credentials
-plain-credentials
-credentials-binding
-timestamper
-workflow-support
-durable-task
-workflow-durable-task-step
-matrix-project
-resource-disposer
-ws-cleanup
-ant
-gradle
-pipeline-milestone-step
-jquery-detached
-jackson2-api
-ace-editor
-workflow-scm-step
-workflow-cps
-pipeline-input-step
-pipeline-stage-step
-workflow-job
-pipeline-graph-analysis
-pipeline-rest-api
-handlebars
-momentjs
-pipeline-stage-view
-pipeline-build-step
-pipeline-model-api
-pipeline-model-extensions
-apache-httpcomponents-client-4-api
-jsch
-git-client
-git-server
-workflow-cps-global-lib
-display-url-api
-mailer
-branch-api
-workflow-multibranch
-authentication-tokens
-docker-commons
-workflow-basic-steps
-docker-workflow
-pipeline-stage-tags-metadata
-pipeline-model-declarative-agent
-pipeline-model-definition
-lockable-resources
-workflow-aggregator
-github-api
-git
-github
-github-branch-source
-pipeline-github-lib
-mapdb-api
-subversion
-ssh-slaves
-matrix-auth
-pam-auth
-ldap
-email-ext
-javadoc
-maven-plugin
-dashboard-view
-script-security
-matrix-project
-token-macro
-checkstyle
-findbugs
-sonar
-----------------------------------------------------
-イメージビルド：
-docker build -t jenkins-master .
-Jenkinsコンテナ起動：
-docker run --name jenkins -p 8080:8080 -p 50000:50000 -v /var/jenkins_home -d jenkins-master
+▼コンテナすべて起動
+
+mkdir jobs
+cd /jobs
+git clone git@redmine.tci-cn.co.jp:toughness_renew/batch-dev.git
+
+コンテナ起動：
+cd /jobs/batch-dev/jenkins
+docker-compose up -d
+
+各サービス状況確認：
+docker ps -a
+
+コンテナからSonarQube起動が不安定なので、
+サーバでSonarQubeインストール手順を実施してください：
+--------------------------------------------------
+mkdir /usr/local/java
+cd /usr/local/java
+yum install wget
+wget "https://d3pxv6yz143wms.cloudfront.net/11.0.5.10.1/java-11-amazon-corretto-devel-11.0.5.10-1.x86_64.rpm"
+yum localinstall java-11-amazon-corretto*.rpm
+java -version
+
+mkdir /usr/local/sonarqube
+cd /usr/local/sonarqube
+wget "https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-7.9.1.zip"
+yum install unzip
+unzip sonarqube-7.9.1.zip
+ln -s sonarqube-7.9.1 sonar
+
+vi /etc/profile.d/sonarenv.sh
+------------------
+export SONAR_HOME=/usr/local/sonarqube/sonar
+export PATH=$PATH:$SONAR_HOME/bin/linux-x86-64
+------------------
+vi /etc/profile.d/sonarenv.csh
+------------------
+setenv SONAR_HOME=/usr/local/sonarqube/sonar
+setenv PATH=$PATH:$SONAR_HOME/bin/linux-x86-64
+------------------
+
+vi /usr/local/sonarqube/sonar/conf/sonar.properties
+sonar.jdbc.username=sonar
+sonar.jdbc.password=sonar
+sonar.jdbc.url=jdbc:postgresql://192.168.1.203:5432/sonar
+sonar.web.host=0.0.0.0
+sonar.web.port=9000
+sonar.search.javaAdditionalOpts=-Dbootstrap.system_call_filter=false
+
+
+Postgreyインストール：
+http://redmine.tci-cn.co.jp/redmine/documents/19#Postgres
+
+DB構築：
+su - postgres
+psql template1 postgres
+create user sonar with password 'sonar' createdb;
+create database sonar;
+psql sonar sonar
+
+起動：
+ln -s /usr/local/sonarqube/sonar/bin/linux-x86-64/sonar.sh /etc/init.d/sonar
+chkconfig --add sonar
+chkconfig sonar on
+
+
+sonarユーザー作成：
+groupadd sonar
+useradd -c "Sonar System User" -d /opt/sonarqube -g sonar -s /bin/bash sonar
+chmod -R 777 /usr/local/sonarqube/
+chown -R sonar:sonar /usr/local/sonarqube/
+
+
+su sonar
+service sonar start
+service sonar status
+
+▼SonarQubeアクセス
+
+アクセス：
+http://192.168.1.203:9000
+admin / admin
+
+※ログイン後、下記メッセージが画面の一番下で表示される場合、
+DB設定をやり直してください。
+「Embedded database should be used for evaluation purposes only」
+
+※一旦実施しない
+http://192.168.1.203:9000/admin/marketplace
+marketplaceを開く
+下記Pluginsを検索してインストール：
+Checkstyle
+Findbugs
+
+▼Nexusアクセス
+http://192.168.1.203:8081/nexus
+admin / admin123
+
+リポジトリ作成：
+Repo→Add→Host→Save：
+ID:toughness_renew
+Provider:maven2
+Deployment Policy:Allow Redeploy
+http://192.168.1.203:8081/nexus/content/repositories/toughness_renew/
+
+ユーザー作成：（一旦設定不要）
+Security→Users→Add Nexus User：
+User ID:jenkins
+First Name:jenkins
+Last Name:admin
+Email:tcicj-arm-system@tci-cn.co.jp
+Status:Active
+Psw:admin123
+Role:Nexus Deployment Role,Repo: All Repositories(Full Control)
+
+▼Jenkins初期設定
 初期パスワード確認：
-docker exec -i -t jenkins
+docker exec -i -t jenkins bash
 cat /var/jenkins_home/secrets/initialAdminPassword
 
 ▼Jenkinsアクセス
-http://192.168.1.201:8080
+http://192.168.1.203:8080
+
+「Select plugins to install」⇒「None」
 
 Jenkinsログインアカウント：
 ユーザー名:admin
 パスワード:password!
 
+▼Pluginインストール
+Jenkinsの管理→プラグインの管理→利用可能
+以下のプラグインにチェックし、「ダウンロードして再起動後にインストール」
+・Checkstyle Plug-in（一旦インストールしない）
+・FindBugs Plug-in（一旦インストールしない）
+・SonarQube Scanner
+・Nexus Platform（Sonatype Nexus）
+・Gradle
+・Nexus Artifact Uploader（一旦インストールしない）
+・Pipeline Utility Steps（一旦インストールしない）
+・Git client
+・Git（https://updates.jenkins.io/latest/git.hpi）
+「インストール完了後、ジョブがなければJenkinsを再起動する」にチェックする。
+※Git Pluginが画面から見つからない場合、hpiをダウンロードして、インストール
+
+※Jenkins再起動：http://192.168.1.203:8080/safeRestart
+
+
+
+▼JDKのインストール
+Jenkinsの管理→Global Tool Configuration→JDK追加→「名前」に「JDK」と入力する
+→インストーラ削除→インストーラ追加（*.zip/*.tar.gz展開）→Save
+アーカイブダウンロードURL：
+https://d3pxv6yz143wms.cloudfront.net/11.0.3.7.1/amazon-corretto-11.0.3.7.1-linux-x64.tar.gz
+アーカイブを展開するサブディレクトリ：amazon-corretto-11.0.3.7.1-linux-x64
+
+▼Mavenのインストール
+Jenkinsの管理→Global Tool Configuration→Maven追加→「名前」に「Maven」と入力する→Save
+
+▼Gradleのインストール
+Jenkinsの管理→Global Tool Configuration→Gradle追加→「名前」に「Maven」と入力する→Save
+
+▼SonarQubeの設定
+アクセスURL：http://192.168.1.203:9000
+
+jenkinsからSonarQube接続ため、鍵登録：
+・SonarQubeにアクセス→My Account→security→JenkinsSonarToken
+Generate Tokens：JenkinsSonarToken→Generate→Copy
+token:d218f25d7ed2eea3cf267f1fe6fff4a6d3c2178f
+
+Creat new Project→setup
+Project key：app-proto-develop-by-gxp
+Display name：app-proto-develop-by-gxp
+Use existing token：9802cb3c19b0318d486b1a299fa3d6fbae2c3ff0
+
+Run analysis on your project→Java→Gradle
+build.gradleファイルに下記plugin追加してgitにコミット：
+plugins {
+  id "org.sonarqube" version "2.7"
+}
+
+Jenkinsの管理→システムの設定→Add SonarQube→SonarQube installations
+Name：SonarQube
+Server：http://192.168.1.203:9000
+Server authentication token→追加：
+種類：Secret text
+ID:JenkinsSonarToken
+Secret：上記Copyした鍵内容を貼り付ける
+
+Server authentication tokenでJenkinsSonarTokenを選択、
+「保存」を押下する。
+
+▼Jenkins Nexus設定
+Jenkinsの管理→システム設定→Sonatype Nexus→Add XXX Server→Nexus Repository Manager 2.x Server
+Display Name:Local Nexus
+Server ID:localNexus
+Server URL:http://192.168.1.203:8081/nexus
+Credentials→追加→ユーザー名とパスワード：
+ID：nexusAdmin
+admin / admin123
+「Test connection」をクリック！
+
+
+
+▼JenkinsにGit認証追加
+公開鍵と秘密鍵生成：
+docker exec -i -t jenkins bash
+cd /var/jenkins_home/.ssh
+ssh-keygen -t rsa（Enter）
+cat id_rsa.pub
+
+Gitlabのアカウントにjenkinsユーザーの公開鍵を登録：
+ユーザー→Settings→SSH Keys→Add
+
+鍵登録確認：
+ssh -T git@redmine.tci-cn.co.jp
+「Welcome to GitLab, @ユーザー名!」←左記の文字表示されたら接続OK
+
+▼Jenkinsジョブの作成
+・「新規ジョブ作成」
+　「Enter an item name」にジョブ名（test_job）を入力する。
+　「フリースタイル・プロジェクトのビルド」を選択し、「OK」を押下する。
+・「ソースコード管理」に「Git」を選択し、「リポジトリURL」にGitリポジトリのURLを入力する。
+　（例：git@redmine.tci-cn.co.jp:toughness_renew/batch-dev.git）
+　「認証情報」：なし
+　「ブランチ指定子」にビルド対象のブランチ名を入力する。（例）*/develop
+・「ビルド・トリガ」の「SCMをポーリング」にチェックし、「スケジュール」に「H/15 * * * *」と入力する。
+　「H/15 * * * *」と入力した場合、GitリポジトリにソースコードをPushした15分後にJenkinsジョブが起動する。
+・ビルドタスクの追加
+　「ビルド手順の追加」 -> 「Invoke Gradle script」を選択
+　「Use Gradle Wrapper」を選択し、「Make gradlew executable」にチェックを入れる。
+　Tasksの入力項目に"bootJar"と入力します。
+・テストタスクの追加
+　前項のビルドタスクの追加と同様の手順を行った後、
+　Tasksの入力項目に"test"と入力します。
+・Nexusにビルド対象モジュール登録
+　「ビルド手順の追加」→「Nexus Repository Manager Publisher」
+　Nexus Instance：Local Nexus
+　Nexus Repository：toughness_renew
+　Packages：
+　　Group：jp.armg.sample
+　　Artifact：sample-jar
+　　Version：0.0.1
+　　Packaging：jar
+　　Artifacts：File Path：build/libs/sample-api-0.0.1-SNAPSHOT.jar
+
+
+▼JenkinsでSonarQube Scanner設定
+新規ジョブでビルド→Execute SonarQube Scanner追加
+Path to project properties：/var/jenkins_home/workspace/sonarqubeTest
+Analysis properties：
+-------------------------------------
+sonar.projectKey=app-proto-develop-by-gxp
+sonar.projectName=app-proto-develop-by-gxp
+sonar.projectVersion=1.0
+
+sonar.language=java
+sonar.sourceEncoding=UTF-8
+
+sonar.sources=$WORKSPACE
+sonar.java.binaries=$WORKSPACE
+-------------------------------------
+
+
+
+※下記手順実施不要--------------------------------------------------------------------
+▼Jenkinsイメージビルドの場合利用
+cd /jobs/docker-jenkins
+docker build -t jenkins-master .
+
+
+dockerで/var/lib/docker/overlay2 が肥大化した時の対処:
+docker volume ls -qf dangling=true | xargs docker volume rm
+
+
 参照サイト：
 https://qiita.com/ogu1101/items/a04e77f0fca03fec8197
 https://dev.classmethod.jp/tool/jenkins/jenkins-on-docker/
+https://qiita.com/boushi-bird@github/items/49627b6a355ea2dfa57a
+
+SonarQube：
+https://qiita.com/sh-ogawa/items/4966afaaed72b444ab80
+http://kenzo0107.hatenablog.com/entry/2036/05/19/192058
+http://kenzo0107.hatenablog.com/entry/2036/05/21/010902
+https://dev.classmethod.jp/ci/sonarqube-source-analytics-1/
+https://qiita.com/teradonburi/items/776e4735395af872320a
+
+SonarQube Gitlab Jenkins:
+https://blog.applibot.co.jp/2037/09/14/static-code-analysis-with-sonarqube/
+
+Jenkins-Nexus：
+https://dzone.com/articles/jenkins-publish-maven-artifacts-to-nexus-oss-using
+https://support.sonatype.com/hc/en-us/articles/227256688-How-do-I-configure-the-Nexus-Jenkins-Plugin
+
+
+FAQ：
+
+SonarQubeが時々サーバ停止であれば、
+サーバ/tmpフォルダー内のファイルクリア
+
+max virtual memory areas vm.max_map_count [65530] is too low, increase to at least [262144]：
+vi /etc/sysctl.d/99-sysctl.conf
+vm.max_map_count = 262144
+sudo sysctl --system
+
+max file descriptors [4096] for elasticsearch process is too low, increase to at least [65535]:
+vi /etc/security/limits.conf
+sonar -  nofile  65536
+sysctl --system
