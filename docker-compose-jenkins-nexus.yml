@@ -1,0 +1,13 @@
+version: '2'
+services:
+  jenkins:
+    container_name: jenkins
+    image: jenkinsci/jenkins:latest
+    ports:
+      - "8080:8080"
+
+  nexus:
+    container_name: nexus
+    image: sonatype/nexus:oss
+    ports:
+      - "8081:8081"
